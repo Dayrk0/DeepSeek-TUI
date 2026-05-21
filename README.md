@@ -1,8 +1,8 @@
 # DeepSeek TUI
 
-> **A terminal-native coding agent built around DeepSeek V4's 1M-token context and prefix cache. Single binary, no Node/Python runtime required — ships an MCP client, sandbox, and durable task queue out of the box.**
+> **面向 [DeepSeek V4](https://platform.deepseek.com) 模型的终端原生编程智能体，支持 100 万 token 上下文、思考模式推理流和完整工具调用。**
 
-[简体中文 README](README.zh-CN.md)
+[English README](README.md)
 
 ```bash
 npm i -g deepseek-tui
@@ -12,90 +12,87 @@ npm i -g deepseek-tui
 [![npm](https://img.shields.io/npm/v/deepseek-tui)](https://www.npmjs.com/package/deepseek-tui)
 [![crates.io](https://img.shields.io/crates/v/deepseek-tui-cli?label=crates.io)](https://crates.io/crates/deepseek-tui-cli)
 
-<a href="https://www.buymeacoffee.com/hmbown" target="_blank"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-5F7FFF?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Buy me a coffee" /></a>
-
 ![DeepSeek TUI screenshot](assets/screenshot.png)
 
 ---
 
-## What is it?
+## 这是什么？
 
-DeepSeek TUI is a coding agent that runs entirely in your terminal. It gives DeepSeek's frontier models direct access to your workspace — reading and editing files, running shell commands, searching the web, managing git, and orchestrating sub-agents — all through a fast, keyboard-driven TUI.
+DeepSeek TUI 是一个完全运行在终端里的编程智能体。它可以让 DeepSeek 前沿模型直接访问你的工作区：读取和编辑文件、运行 shell 命令、搜索和浏览网页、管理 git、调度子智能体，并通过快速的键盘驱动 TUI 完成多步开发任务。
 
-**Built for DeepSeek V4** (`deepseek-v4-pro` / `deepseek-v4-flash`) with 1M-token context windows and native thinking-mode (chain-of-thought) streaming. See the model's reasoning unfold in real time as it works through your tasks.
+它面向 **DeepSeek V4**（`deepseek-v4-pro` / `deepseek-v4-flash`）构建，默认支持 100 万 token 上下文窗口和原生思考模式流式输出。模型推理、工具调用和最终回答会在终端里实时呈现。
 
-### Key Features
+### 主要功能
 
-- **Native RLM** (`rlm_query` tool) — fans out 1–16 cheap `deepseek-v4-flash` children in parallel against the existing DeepSeek client for batched analysis, decomposition, or parallel reasoning
-- **Thinking-mode streaming** — shows DeepSeek's chain-of-thought as it reasons about your code
-- **Full tool suite** — file ops, shell execution, git, web search/browse, apply-patch, sub-agents, MCP servers
-- **1M-token context** — automatic intelligent compaction when context fills up
-- **Three interaction modes** — Plan (read-only explore), Agent (interactive with approval), YOLO (auto-approved). Decomposition-first system prompts teach the model to `checklist_write`, `update_plan`, and spawn sub-agents before acting
-- **Reasoning-effort tiers** — cycle through `off → high → max` with Shift+Tab
-- **Session save/resume** — checkpoint and resume long sessions
-- **Workspace rollback** — side-git pre/post-turn snapshots with `/restore` and `revert_turn`, without touching your repo's `.git`
-- **HTTP/SSE runtime API** — `deepseek serve --http` for headless agent workflows
-- **MCP protocol** — connect to Model Context Protocol servers for extended tooling; see [docs/MCP.md](docs/MCP.md)
-- **Live cost tracking** — per-turn and session-level token usage and cost estimates
-- **Dark theme** — DeepSeek-blue palette
-
----
-
-## How it's wired
-
-DeepSeek TUI's architecture follows a **dispatcher → TUI → engine → tools** pattern.
-The `deepseek` CLI binary is a lightweight dispatcher that parses subcommands and
-delegates to the `deepseek-tui` companion binary for interactive sessions. The TUI
-runs a **ratatui**-based interface that communicates with an async engine executing
-an agent loop: user input flows to the LLM via a streaming client (OpenAI-compatible
-Chat Completions), tool calls are extracted from the response and dispatched through
-a typed tool registry (shell, file ops, git, web, sub-agents, MCP), and results
-stream back into the transcript.
-
-Behind the scenes, the engine manages session state, turn tracking, and a durable
-task queue. The LSP subsystem (`crates/tui/src/lsp/`) provides post-edit diagnostics
-by spawning language servers (rust-analyzer, pyright, etc.) and injecting errors
-into the model's context before the next reasoning step. A recursive language model
-(RLM) subsystem gives the agent a sandboxed Python REPL for batch classification
-and sub-LLM orchestration. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for
-the full walkthrough.
+- **原生 RLM**（`rlm_query` 工具）：用现有 DeepSeek 客户端并行调度 1 到 16 个低成本 `deepseek-v4-flash` 子任务，用于批量分析、任务拆解或并行推理。
+- **思考模式流式输出**：实时显示 DeepSeek 的推理过程。
+- **完整工具集**：文件操作、shell 执行、git、网页搜索/浏览、apply-patch、子智能体、MCP 服务器。
+- **100 万 token 上下文**：上下文接近上限时自动进行智能压缩。
+- **三种交互模式**：Plan（只读探索）、Agent（默认交互并带审批）、YOLO（可信工作区内自动批准工具）。
+- **推理强度档位**：用 `Shift+Tab` 在 `off -> high -> max` 之间切换。
+- **会话保存和恢复**：适合长任务的断点续作。
+- **工作区回滚**：通过 side-git 记录每轮前后快照，支持 `/restore` 和 `revert_turn`，不修改项目自己的 `.git`。
+- **HTTP/SSE 运行时 API**：`deepseek serve --http` 可用于无界面智能体流程。
+- **MCP 协议支持**：连接 Model Context Protocol 服务器扩展工具，见 [docs/MCP.md](docs/MCP.md)。
+- **实时成本跟踪**：按轮次和会话统计 token 用量与成本估算。
+- **深色主题**：DeepSeek 蓝色系终端界面。
 
 ---
 
-## Quickstart
+## 快速开始
 
 ```bash
 npm install -g deepseek-tui
 deepseek
 ```
 
-Prebuilt binaries are published for **Linux x64**, **Linux ARM64** (v0.8.8+),
-**macOS x64**, **macOS ARM64**, and **Windows x64**. For everything else —
-musl, riscv64, FreeBSD, etc. — see [Build from source](#install-from-source)
-below or the full [docs/INSTALL.md](docs/INSTALL.md) walkthrough.
+预构建二进制覆盖 **Linux x64**、**Linux ARM64**（v0.8.8 起）、**macOS x64**、
+**macOS ARM64**、**Windows x64**。其他平台（musl、riscv64、FreeBSD 等）请见
+下方的 [从源码安装](#从源码安装) 章节，或参考完整的
+[docs/INSTALL.md](docs/INSTALL.md)。
 
-### Linux ARM64 (Raspberry Pi, Asahi, Graviton, HarmonyOS PC)
+首次启动时会提示输入 [DeepSeek API key](https://platform.deepseek.com/api_keys)。TUI 会把它保存到用户配置 `~/.deepseek/config.toml`，因此在任意目录、IDE 终端和脚本里都能读到，并且不会触发系统密钥环弹窗。
 
-`npm i -g deepseek-tui` works on glibc-based ARM64 Linux from **v0.8.8**
-onward. If you're stuck on v0.8.7 or earlier (where you'll see
-`Unsupported architecture: arm64`), upgrade or use `cargo install`:
+也可以提前配置：
 
 ```bash
-# requires Rust 1.85+ (https://rustup.rs)
-cargo install deepseek-tui-cli --locked   # provides `deepseek`
-cargo install deepseek-tui     --locked   # provides `deepseek-tui`
+# 推荐 —— 保存到 ~/.deepseek/config.toml；适用于所有场景
+# （交互式 shell、IDE 终端、脚本、cron）：
+deepseek auth set --provider deepseek
+
+# 环境变量备选 —— 注意 zsh 中 ~/.zshrc 的 export 只对交互式 shell 生效。
+# 需要在登录 shell / IDE / 脚本中也生效，请放进 ~/.zshenv：
+export DEEPSEEK_API_KEY="YOUR_DEEPSEEK_API_KEY"
+deepseek
+
+# 检查二进制实际读到的源：
+deepseek doctor
 ```
 
-You can also download `deepseek-linux-arm64` and `deepseek-tui-linux-arm64`
-directly from the [Releases page](https://github.com/Hmbown/DeepSeek-TUI/releases)
-and drop both side by side into a directory on your `PATH`. Cross-compiling
-from x64 to ARM64 is documented in
-[docs/INSTALL.md](docs/INSTALL.md#cross-compiling-from-x64-to-arm64-linux).
+> 轮换或移除已保存的密钥：`deepseek auth clear --provider deepseek`
+> （旧别名 `deepseek logout` 也可用），然后重新运行
+> `deepseek auth set --provider deepseek`。
 
-### China / mirror-friendly install
+### Linux ARM64（HarmonyOS 轻薄本、openEuler、Kylin、树莓派、Graviton 等）
 
-If GitHub or npm downloads are slow from mainland China, install the Rust
-crates through a Cargo registry mirror:
+从 **v0.8.8** 起，`npm i -g deepseek-tui` 直接支持 glibc 系的 ARM64 Linux。
+如果你停留在 v0.8.7 或更早版本，会看到 `Unsupported architecture: arm64`
+错误。升级到最新版即可，或直接用 `cargo install`：
+
+```bash
+# 需要 Rust 1.85+（https://rustup.rs）
+cargo install deepseek-tui-cli --locked   # 提供 `deepseek`
+cargo install deepseek-tui     --locked   # 提供 `deepseek-tui`
+```
+
+也可以从 [Releases 页面](https://github.com/Hmbown/DeepSeek-TUI/releases) 下载
+`deepseek-linux-arm64` 与 `deepseek-tui-linux-arm64`，放到同一个 `PATH` 目录里。
+从 x64 主机交叉编译到 ARM64 的步骤见
+[docs/INSTALL.md](docs/INSTALL.md#cross-compiling-from-x64-to-arm64-linux)。
+
+### 中国大陆 / 镜像友好安装
+
+如果在中国大陆访问 GitHub 或 npm 下载较慢，可以通过 Cargo 注册表镜像安装 Rust crate：
 
 ```toml
 # ~/.cargo/config.toml
@@ -106,576 +103,271 @@ replace-with = "tuna"
 registry = "sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/"
 ```
 
-Then install the canonical `deepseek` dispatcher and the companion TUI binary
-(both are required — the dispatcher delegates to the TUI runtime):
+然后从对应的包安装：
 
 ```bash
-cargo install deepseek-tui-cli --locked   # provides `deepseek`
-cargo install deepseek-tui     --locked   # provides `deepseek-tui`
+cargo install deepseek-tui-cli --locked   # 提供推荐入口 `deepseek`
+cargo install deepseek-tui     --locked   # 可选：提供 TUI 伴随二进制 `deepseek-tui`
+deepseek --version
+deepseek doctor --json
+```
+
+从 `v0.8.2` 起回到分包安装：
+
+- `deepseek-tui-cli`：推荐使用的调度器入口（`deepseek`）。
+- `deepseek-tui`：交互式 TUI 伴随二进制。
+
+也可以直接从 [GitHub Releases](https://github.com/Hmbown/DeepSeek-TUI/releases) 下载预编译二进制。如果你有镜像后的 release 资产目录，也可以配合 `DEEPSEEK_TUI_RELEASE_BASE_URL` 使用 TUNA、rsproxy、腾讯云 COS 或阿里云 OSS 等镜像。
+
+### 从源码安装
+
+适用于任何 Tier-1 Rust 目标，包括 musl、riscv64、FreeBSD，以及早于
+v0.8.8、还没有官方预编译包的 ARM64 发行版。
+
+```bash
+# Linux 构建依赖（Debian/Ubuntu/openEuler/Kylin）：
+#   sudo apt-get install -y build-essential pkg-config libdbus-1-dev
+#   # RHEL 系：sudo dnf install -y gcc make pkgconf-pkg-config dbus-devel
+
+git clone https://github.com/Hmbown/DeepSeek-TUI.git
+cd DeepSeek-TUI
+
+cargo install --path crates/cli --locked   # 需要 Rust 1.85+；提供 `deepseek`
+cargo install --path crates/tui --locked   # 提供 `deepseek-tui`
+
 deepseek --version
 ```
 
-You can also download prebuilt binaries directly from the
-[GitHub Releases](https://github.com/Hmbown/DeepSeek-TUI/releases) page when
-GitHub release assets are reachable. TUNA, rsproxy, Tencent COS, or Aliyun OSS
-mirrors can also be used with `DEEPSEEK_TUI_RELEASE_BASE_URL` when a mirrored
-release-asset directory is available.
+两个二进制都需要安装：`deepseek` 是入口调度器，运行时会调用 `deepseek-tui`。
+跨平台编译、镜像、平台特定故障排查见 [docs/INSTALL.md](docs/INSTALL.md)。
 
-On first launch you'll be prompted for your [DeepSeek API key](https://platform.deepseek.com/api_keys). The TUI saves it to your user config at `~/.deepseek/config.toml` so it works from every folder without OS credential prompts.
+---
 
-You can also set it ahead of time:
+## 其他模型提供方
 
-```bash
-# Recommended — saves to ~/.deepseek/config.toml; works everywhere
-# (interactive shells, IDE terminals, scripts, cron):
-deepseek auth set --provider deepseek
-
-# Env var alternative — note that on zsh, exports in ~/.zshrc only
-# reach interactive shells. Put it in ~/.zshenv if you want it in
-# every context (login shells, IDEs, scripts):
-export DEEPSEEK_API_KEY="YOUR_DEEPSEEK_API_KEY"
-deepseek
-
-# Verify which source the binary is reading:
-deepseek doctor
-```
-
-> To rotate or remove a saved key, run
-> `deepseek auth clear --provider deepseek` (or `deepseek logout` for
-> the legacy alias), then run `deepseek auth set --provider deepseek`
-> again.
-
-### Using NVIDIA NIM
+### NVIDIA NIM
 
 ```bash
 deepseek auth set --provider nvidia-nim --api-key "YOUR_NVIDIA_API_KEY"
 deepseek --provider nvidia-nim
 
-# or per-process:
+# 或仅对当前进程生效：
 DEEPSEEK_PROVIDER=nvidia-nim NVIDIA_API_KEY="..." deepseek
 ```
 
-### Other DeepSeek V4 providers
+### Fireworks 和自托管 SGLang
 
 ```bash
 deepseek auth set --provider fireworks --api-key "YOUR_FIREWORKS_API_KEY"
 deepseek --provider fireworks --model deepseek-v4-pro
 
-# SGLang is self-hosted; auth is optional for localhost deployments.
+# SGLang 通常是自托管；localhost 部署可以不配置鉴权。
 SGLANG_BASE_URL="http://localhost:30000/v1" deepseek --provider sglang --model deepseek-v4-flash
 ```
 
-<details id="install-from-source">
-<summary>Install from source</summary>
+---
 
-Works on any Tier-1 Rust target — including Linux musl/riscv64, FreeBSD, and
-ARM64 distros that pre-date our prebuilt binaries.
+## 使用方式
 
 ```bash
-# Linux build deps (Debian/Ubuntu/openEuler/Kylin):
-#   sudo apt-get install -y build-essential pkg-config libdbus-1-dev
-#   # RHEL family: sudo dnf install -y gcc make pkgconf-pkg-config dbus-devel
-
-git clone https://github.com/Hmbown/DeepSeek-TUI.git
-cd DeepSeek-TUI
-
-cargo install --path crates/cli --locked   # requires Rust 1.85+; provides `deepseek`
-cargo install --path crates/tui --locked   # provides `deepseek-tui`
+deepseek                                       # 交互式 TUI
+deepseek "explain this function"              # 一次性提示
+deepseek --model deepseek-v4-flash "summarize" # 指定模型
+deepseek --yolo                                # YOLO 模式，自动批准工具
+deepseek auth set --provider deepseek          # 保存 API key 到 ~/.deepseek/config.toml
+deepseek doctor                                # 检查配置和连接
+deepseek doctor --json                         # 机器可读诊断
+deepseek setup --status                        # 只读安装状态检查
+deepseek setup --tools --plugins               # 创建本地工具和插件目录
+deepseek models                                # 列出可用 API 模型
+deepseek sessions                              # 列出已保存会话
+deepseek resume --last                         # 恢复最近会话
+deepseek serve --http                          # HTTP/SSE API 服务
+deepseek mcp list                              # 列出已配置 MCP 服务器
+deepseek mcp validate                          # 校验 MCP 配置和连接
+deepseek mcp-server                            # 启动 dispatcher MCP stdio 服务器
 ```
 
-Both binaries are required — the `deepseek` dispatcher delegates to
-`deepseek-tui` at runtime. Cross-compilation, mirror, and platform-specific
-notes live in [docs/INSTALL.md](docs/INSTALL.md).
+### 常用快捷键
 
-</details>
-
----
-
-## What's new in v0.8.8
-
-A stabilization-focused release: a thick band of UX polish on top of the v0.8.6 / v0.8.7 base, plus runtime fixes for the rough edges that surfaced in production sessions. No model or API changes; every existing config and session keeps working.
-
-### 🪟 TUI polish
-
-- **Visual retry / backoff banner** when the upstream rate-limits or 5xxs, with a per-second countdown so a stalled session is obviously stalled instead of silently frozen ([#499](https://github.com/Hmbown/DeepSeek-TUI/issues/499)).
-- **MCP health chip** in the footer — a coloured `MCP n/n` glyph reflects how many configured servers are actually reachable, hidden when no servers are configured ([#502](https://github.com/Hmbown/DeepSeek-TUI/issues/502)).
-- **Tool-output spillover** routes full bodies to `~/.deepseek/tool_outputs/<id>.txt` with a 32 KiB head visible in the cell; the existing details pager appends the full output so nothing is hidden, just paged ([#500](https://github.com/Hmbown/DeepSeek-TUI/issues/500)).
-- **Multi-day duration formatting** — `humanize_duration` walks `s → m → h → d → w` and caps at two units, so a long-running session reads `2d 3h` instead of `188415s` ([#447](https://github.com/Hmbown/DeepSeek-TUI/issues/447)).
-- **Cumulative `worked Nh Mm` footer chip** appears once a session crosses 60s, dropping first under narrow widths so it never shoves more important chips off-screen ([#448](https://github.com/Hmbown/DeepSeek-TUI/issues/448)).
-- **OSC 8 hyperlinks** — URLs in the transcript are Cmd+click-openable on iTerm2, Terminal.app, Ghostty, Kitty, WezTerm, Alacritty, and modern gnome-terminal/konsole; legacy terminals just show the visible text ([#498](https://github.com/Hmbown/DeepSeek-TUI/issues/498)).
-- **Inline diff rendering** for `edit_file` and `write_file` — tool results emit a unified diff at the head of the body, picked up by the diff-aware renderer with line numbers and coloured `+`/`-` gutters ([#505](https://github.com/Hmbown/DeepSeek-TUI/issues/505)).
-- **Composer prompt stash** — Ctrl+S parks the current draft to `~/.deepseek/composer_stash.jsonl`, `/stash list` shows parked drafts, `/stash pop` restores LIFO, `/stash clear` wipes the file. Self-healing JSONL parser, 200-entry cap, multi-line drafts preserved ([#440](https://github.com/Hmbown/DeepSeek-TUI/issues/440)).
-- **Slash-menu layout no longer jitters** the chat area as the matched-entry count changes mid-typing — reported on Windows 10 PowerShell + WSL where the per-cell write cost made the redraw visibly laggy. The composer now reserves its panel-max envelope for the whole slash/mention session.
-
-### ♿ Accessibility
-
-- **`NO_ANIMATIONS=1`** env var (also `1` / `true` / `yes` / `on`) forces `low_motion = true` and `fancy_animations = false` at startup regardless of saved settings; new `docs/ACCESSIBILITY.md` documents every motion / output knob ([#450](https://github.com/Hmbown/DeepSeek-TUI/issues/450)).
-- **Keyboard-enhancement flags** pop on every shutdown path including panic, Ctrl+Z suspend, and external-editor invocation, so a crashed TUI never leaves your terminal in raw mode ([#443](https://github.com/Hmbown/DeepSeek-TUI/issues/443)/[#444](https://github.com/Hmbown/DeepSeek-TUI/issues/444)).
-- **Kitty keyboard protocol** (`DISAMBIGUATE_ESCAPE_CODES`) pushed at startup so kitty-protocol terminals report unambiguous events for Option/Alt-modified keys; legacy terminals are unaffected ([#442](https://github.com/Hmbown/DeepSeek-TUI/issues/442)).
-
-### 🤖 Agents / sub-agents
-
-- **Sub-agent cap raised 5 → 10** (configurable via `[subagents].max_concurrent`, hard ceiling 20). Completed agents no longer count against the running cap ([#509](https://github.com/Hmbown/DeepSeek-TUI/issues/509)).
-- **Multi-agent fan-out UI freeze fixed** — `SharedSubAgentManager` is now `Arc<RwLock<…>>`; read paths take read locks instead of contending on a `Mutex` ([#510](https://github.com/Hmbown/DeepSeek-TUI/issues/510)).
-- **Sub-agent output summarized** before being folded into the parent's context, so a child returning 100KB of evidence doesn't wreck the parent's window ([#511](https://github.com/Hmbown/DeepSeek-TUI/issues/511)).
-- **`Implementer` + `Verifier` sub-agent roles** wired into `agent_spawn` / `agent_assign` schemas so the model surfaces them by name ([#404](https://github.com/Hmbown/DeepSeek-TUI/issues/404)).
-- **`agent_list` defaults to current-session view** — prior sessions filtered out unless `include_archived=true` ([#405](https://github.com/Hmbown/DeepSeek-TUI/issues/405)).
-- **Compact `agent_spawn` rendering** in live mode collapses to a single header line; transcript replay keeps the full block ([#409](https://github.com/Hmbown/DeepSeek-TUI/issues/409)).
-- **`agent_swarm` / `spawn_agents_on_csv` / `/swarm`** removed in v0.8.5 — confirmed gone in this release; multi-child fanout is no longer a model-callable tool.
-
-### 🛠️ Workflows / extensibility
-
-- **`load_skill` model-callable tool** — takes a skill id, returns the SKILL.md body plus sibling companion-file list in one call. Available in Plan and Agent / Yolo modes ([#434](https://github.com/Hmbown/DeepSeek-TUI/issues/434)).
-- **Cross-tool skill discovery** — skills catalogue and `load_skill` walk `.agents/skills`, `skills`, `.opencode/skills`, `.claude/skills`, and `~/.deepseek/skills` with first-wins precedence ([#432](https://github.com/Hmbown/DeepSeek-TUI/issues/432)).
-- **`/hooks` read-only lifecycle hook listing** groups configured hooks by event with name / command preview / timeout / condition. Notes the global `[hooks].enabled` state. `/hooks events` lists every supported `HookEvent` value ([#460](https://github.com/Hmbown/DeepSeek-TUI/issues/460)).
-- **Every `HookEvent` now has a live producer** — `tool_call_before` / `tool_call_after` / `message_submit` / `on_error` fire from the runtime in addition to the existing session-lifecycle and mode-change events. Hooks remain read-only observers in v0.8.8 ([#455](https://github.com/Hmbown/DeepSeek-TUI/issues/455)).
-- **`instructions = [...]` config array** lets you stack additional system-prompt files; paths capped at 100 KiB each, project array replaces user array wholesale ([#454](https://github.com/Hmbown/DeepSeek-TUI/issues/454)).
-- **`deepseek pr <N>` subcommand** fetches a PR's title / body / diff via `gh` and launches the TUI with a review prompt already in the composer. Codepoint-safe diff cap at 200 KiB; optional `--repo` / `--checkout` ([#451](https://github.com/Hmbown/DeepSeek-TUI/issues/451)).
-- **User-memory MVP** (opt-in) — `~/.deepseek/memory.md` injected into the system prompt as a `<user_memory>` block; `# foo` typed in the composer appends a timestamped bullet without firing a turn; `/memory [show|path|clear|edit|help]` for inspection. Default off; enable with `[memory] enabled = true` or `DEEPSEEK_MEMORY=on`. See [docs/MEMORY.md](docs/MEMORY.md) for the full guide and examples ([#489](https://github.com/Hmbown/DeepSeek-TUI/issues/489)–[#493](https://github.com/Hmbown/DeepSeek-TUI/issues/493)).
-
-### 🔒 Security
-
-- **Project-config keys denied at workspace scope** — a malicious `./.deepseek/config.toml` can no longer override `api_key`, `base_url`, `provider`, or `mcp_config_path`. The loosest values (`approval_policy = "auto"`, `sandbox_mode = "danger-full-access"`) are also denied at project scope ([#417](https://github.com/Hmbown/DeepSeek-TUI/issues/417)).
-- **`SSL_CERT_FILE` honoured** in the HTTPS client so corporate-CA / MITM-proxy users can connect — PEM bundle and DER fallback; failures log a warning and continue ([#418](https://github.com/Hmbown/DeepSeek-TUI/issues/418)).
-- **Execpolicy heredoc parsing** — `normalize_command` strips heredoc bodies before shlex tokenization so `auto_allow = ["cat > file.txt"]` matches the heredoc form `cat <<EOF > file.txt\nbody\nEOF`. Recognises `<<DELIM` / `<<-DELIM` / `<<'DELIM'` / `<<"DELIM"`; leaves `<<<` (here-string) untouched ([#419](https://github.com/Hmbown/DeepSeek-TUI/issues/419)).
-- **`Don't auto-approve git -C ...`** runtime fix shipped on v0.8.7 main ([#416](https://github.com/Hmbown/DeepSeek-TUI/issues/416)) — included for completeness.
-
-### 📦 Packaging
-
-- **Linux ARM64 prebuilts** added to the release matrix; npm wrapper picks the right binary on `aarch64-linux` automatically. New `docs/INSTALL.md` covers every install path (npm, cargo, prebuilt, source).
-- **`deepseek update` fixed** — the v0.8.7 self-updater used Rust ARCH constants (`aarch64`/`x86_64`) instead of release-asset naming (`arm64`/`x64`), so the command failed on every platform. Now maps correctly and rejects `.sha256` siblings as primary binaries ([#503](https://github.com/Hmbown/DeepSeek-TUI/issues/503)).
-- **CI workflow cleanup** — pruned three duplicated/dead workflows; `release.yml` `build` job now allows the `parity` gate to be skipped on manual `workflow_dispatch` ([#507](https://github.com/Hmbown/DeepSeek-TUI/issues/507)).
-
-### 🐛 Bug fixes
-
-- **Composer Option+Backspace** deletes by word now ([#488](https://github.com/Hmbown/DeepSeek-TUI/issues/488)).
-- **Offline composer queue is session-scoped** — legacy unscoped queues fail closed instead of leaking content into unrelated chats ([#487](https://github.com/Hmbown/DeepSeek-TUI/issues/487)).
-- **`display_path` test race + Windows separator** — tests no longer mutate `$HOME`; home-relative suffix joins with `MAIN_SEPARATOR_STR` so Windows shows `~\projects\foo` ([#506](https://github.com/Hmbown/DeepSeek-TUI/issues/506)).
-- **Footer reads statusline colours from `app.ui_theme`** ([#449](https://github.com/Hmbown/DeepSeek-TUI/issues/449)).
-
-### 🔑 Auth & onboarding
-
-- **No automatic OS credential prompts** — startup, `doctor`, `doctor --json`, and normal dispatcher setup now use CLI flag → `~/.deepseek/config.toml` → env.
-- **One setup command works everywhere** — `deepseek auth set --provider deepseek` and the in-TUI onboarding screen both write the shared user config file, so the key is available from any folder without relying on `~/.zshrc` propagation.
-- **Onboarding screen wording rewritten** — "Step 1: open https://platform.deepseek.com/api_keys" / "Step 2: paste below and press Enter" with an explicit note showing where the key is saved.
-- **Missing-key error is now actionable** — the `DeepSeek API key not found` bail message lists the config-backed CLI command first and the env-var alternative second, with a `~/.zshrc` vs `~/.zshenv` note for zsh users whose env var only reaches interactive shells.
-- **Dispatcher provider/auth parity** — the canonical `deepseek` entry point now accepts the same DeepSeek V4 providers advertised by the TUI (`fireworks`, `sglang` included), and legacy `deepseek login --api-key` / `deepseek logout` now share the same config-backed path.
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## What's new in v0.8.7
-
-Quick patch on top of v0.8.6 to unblock copy/select.
-
-### ✂️ Selection works across the whole transcript
-
-The selection-tightening from v0.8.6 restricted copy/select to user and
-assistant message bodies, which made it impossible to copy text out of
-system notes, thinking blocks, or tool output. v0.8.7 drops that gate so
-the rendered transcript block is selectable end-to-end again.
-
-> **Known issues in v0.8.7 (fixed in v0.8.8):**
-> - `deepseek update` fails with `no asset found for platform …` because the
->   platform-string mapping in the self-updater uses `aarch64`/`x86_64`
->   instead of the release artifact's `arm64`/`x64`
->   ([#503](https://github.com/Hmbown/DeepSeek-TUI/issues/503)).
-> - `npm i -g deepseek-tui` exits with `Unsupported architecture: arm64 on
->   platform linux` on ARM64 Linux because v0.8.7 didn't publish a
->   `deepseek-linux-arm64` asset.
->
-> Until v0.8.8 ships, install via:
-> ```bash
-> # x64 Linux / macOS / Windows
-> npm i -g deepseek-tui
->
-> # ARM64 Linux (HarmonyOS, openEuler, Asahi, Raspberry Pi, Graviton, …) —
-> # build from source with Cargo (Rust 1.85+):
-> cargo install deepseek-tui-cli --locked   # provides `deepseek`
-> cargo install deepseek-tui     --locked   # provides `deepseek-tui`
-> ```
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md).
-
-## What's new in v0.8.6
-
-### 📝 AGENTS.md bootstrap (`/init`)
-
-`/init` walks the workspace, auto-detects the project type (Cargo.toml,
-package.json, pyproject.toml, etc.), and writes a starter `AGENTS.md` with
-build/test commands, workspace layout, and conventions derived from `git log`.
-Re-running shows a diff of the proposed update without overwriting changes.
-
-### 🔍 Inline LSP diagnostics
-
-After every `apply_patch`/`edit_file`/`write_file`, the engine sends a
-`textDocument/didChange` to the LSP server and surfaces errors/warnings
-inline in the tool result. Configurable via `/lsp on|off` and the
-`[lsp]` config section. Currently supports rust-analyzer, pyright,
-typescript-language-server, gopls, and clangd.
-
-### 🔄 Self-update (`deepseek update`)
-
-`deepseek update` fetches the latest GitHub release, downloads the
-platform-correct binary with SHA256 verification, and atomically replaces
-the running binary. No more remembering `cargo install` or `npm install -g`.
-
-### 🌐 Session sharing (`/share`)
-
-`/share` exports the current session as a static HTML page and uploads it
-to a GitHub Gist via the `gh` CLI, producing a clickable URL you can paste
-anywhere.
-
-### 📖 Docs refresh
-
-README hero updated with intent statement and architecture summary.
-ARCHITECTURE.md cleaned up for v0.8.6 (removed swarm tool surface, current
-crate map). CONTRIBUTING.md now has a "shape of a PR" section.
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## What's new in v0.8.5
-
-### 🛡️ SSRF protection for fetch_url
-
-`fetch_url` now validates target hostnames and IPs before connecting —
-localhost-only HTTP for loopback, DNS pinning for remote hosts, and
-blocked internal IP ranges. Contributed by Hafeez Pizofreude (#261)
-and Jason.
-
-### 🖥️ Schema-driven config editor
-
-`/config tui` opens a forms-style config editor powered by schemaui.
-Bare `/config` opens the legacy native modal; `/config web` launches a
-browser surface (requires the `web` feature). Contributed by Unic
-(YuniqueUnic) via #365.
-
-### 🏷️ DeepseekCN provider
-
-`ApiProvider::DeepseekCN` targets `api.deepseeki.com` for China-based
-users. Auto-detects when `zh-*` is the system locale on first run.
-
-### 🔐 Atomic file writes
-
-All writes to `~/.deepseek/` now go through `write_atomic` (tempfile +
-fsync + rename), preventing corruption from mid-write crashes.
-
-### 🧵 Panic safety foundations
-
-`spawn_supervised` catches and logs task panics with crash dumps instead
-of silently dropping the task.
-
-### ⌨️ `/config <key> <value>` wiring
-
-`/config model deepseek-v4-flash`, `/config locale zh-Hans`, etc. change
-settings live in-session without opening the editor.
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## Thanks
-
-v0.8.5 shipped with help from these contributors:
-
-- **[Hafeez Pizofreude](https://github.com/pizofreude)** — SSRF protection in `fetch_url` and Star History chart
-- **[Unic (YuniqueUnic)](https://github.com/YuniqueUnic)** — Schema-driven config UI (TUI + web)
-- **[Jason](mailto:jason@aveoresearchlabs.com)** — SSRF security hardening
-
----
-
-## What's new in v0.8.0
-
-### ⚡ Shell stability and post-send responsiveness
-
-Completed background shell jobs now release their live process and pipe
-handles as soon as completion is observed, while keeping the job record
-inspectable. This prevents long-running sessions from hitting `Too many
-open files (os error 24)`, which could make checkpoint saves fail and
-cause shell spawning, message send, close, and Esc/cancel paths to lag
-or fail.
-
-### 🪟 Windows REPL runtime CI hardening
-
-Windows gets a longer Python bootstrap readiness timeout for the REPL
-runtime tests, matching GitHub runner startup contention without
-weakening bootstrap failures on other platforms.
-
-### 🌏 Cargo mirror install docs
-
-The README now includes a TUNA Cargo mirror setup and direct release
-asset guidance for users with slow GitHub/npm access.
-
-### 🧪 Test hardening
-
-New regression coverage proves completed background shell jobs drop
-their live process handles after `exec_shell_wait`.
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## What's new in v0.7.8
-
-### ⚡ Shell controls: foreground-to-background detach + `exec_shell_cancel`
-
-A running foreground command can now be moved to the background interactive
-session — press **`Ctrl+B`** while a command is executing to open shell
-controls, then either detach it (it continues running and can be polled
-with `exec_shell_wait`) or cancel the current turn.
-
-**New tool: `exec_shell_cancel`** — cancel a specific background shell
-task by `task_id`, or cancel all running background tasks with `all: true`.
-
-**Cancel-aware `exec_shell_wait`** — canceling a turn while
-`exec_shell_wait` is blocking now stops the wait but leaves the background
-task running.
-
-### 🐛 Unicode glob search fix
-
-Filenames containing multi-byte characters (e.g., `dialogue_line__冰糖.mp3`)
-no longer panic the `matches_glob` function — byte-index slicing was replaced
-with `char_indices()` boundary-safe iteration.
-
-### 🔄 Fanout UI reconciliation
-
-The fanout card no longer pre-seeds with zero-state workers, eliminating the
-"0 done · 0 running · 0 failed · N pending" vs sidebar "N running"
-contradiction. The sidebar now shows "dispatching N" before the first progress
-event arrives from a legacy fanout invocation.
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## What's new in v0.7.6
-
-### 🌐 UI Localization
-
-DeepSeek TUI now speaks your language. The new `locale` setting
-in `settings.toml` controls UI chrome — composer, history search,
-`/config`, help overlay, and status hints — without changing model
-output language.
-
-| Setting | Display |
+| 按键 | 功能 |
 |---|---|
-| `locale = \"auto\"` | Checks `LC_ALL` → `LC_MESSAGES` → `LANG` (default) |
-| `locale = \"ja\"` | Japanese |
-| `locale = \"zh-Hans\"` | Chinese Simplified |
-| `locale = \"pt-BR\"` | Portuguese (Brazil) |
-| `locale = \"en\"` | English fallback |
-
-Unsure what to pick? Run `locale` in your terminal; the first matching
-tag is used automatically.
-
-### 📋 Smarter paste handling
-
-Paste-burst detection catches rapid-key pastes in terminals that don't
-send bracketed-paste events — CRLF is normalized, and multiline pastes
-stay buffered until you stop typing. Configurable via `paste_burst_detection`.
-
-### 🔍 Composer history search
-
-Forgot that prompt you wrote an hour ago? `Alt+R` opens a live search
-across input history and recovered drafts. Type to filter, `Enter` to
-accept, `Esc` to restore what you were typing.
-
-### 👁️ Pending input preview
-
-During a running turn, queued messages, pending steers, and context chips
-appear above the composer so you can see what will be sent next.
-`Alt+↑` pops the last queued message back for editing.
-
-### ⚙️ Grouped `/config` editor
-
-`/config` now groups settings by section (Model, Permissions, Display,
-...) with a live filter. `↑/↓` (or `j`/`k` when the filter is empty)
-navigate; `Enter`/`e` edit the selected row; `Esc` clears the filter
-or closes.
-
-### ⌨️ Searchable help overlay
-
-`?` (with empty input), `F1`, or `Ctrl+/` opens a searchable help
-overlay. Type to filter commands and keybindings; multi-term searches
-act as AND.
-
-Full history: [CHANGELOG.md](CHANGELOG.md).
+| `Tab` | 补全 `/` 或 `@`；运行中则把草稿排队为后续消息；否则切换模式 |
+| `Shift+Tab` | 切换推理强度：off -> high -> max |
+| `F1` | 帮助 |
+| `Esc` | 返回 / 关闭 |
+| `Ctrl+K` | 命令面板 |
+| `Ctrl+R` | 恢复旧会话 |
+| `Alt+R` | 搜索提示历史和恢复草稿 |
+| `@path` | 在输入框中附加文件或目录上下文 |
+| `Alt+↑` | 编辑最后一条排队消息 |
+| `/attach <path>` | 附加图片或视频路径引用 |
 
 ---
 
-## Models & Pricing
+## 模式
 
-DeepSeek TUI targets **DeepSeek V4** models with 1M-token context windows by default.
+| 模式 | 行为 |
+|---|---|
+| **Plan** | 只读调查；模型先探索并提出拆解计划，再进行更改 |
+| **Agent** | 默认交互模式；多步工具调用带审批门禁 |
+| **YOLO** | 在可信工作区自动批准工具；仍会保留计划和清单以便追踪 |
 
-| Model | Context | Input (cache hit) | Input (cache miss) | Output |
+---
+
+## 配置
+
+主配置文件是 `~/.deepseek/config.toml`。完整选项见 [config.example.toml](config.example.toml) 和 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)。
+
+常用环境变量：
+
+| 变量 | 用途 |
+|---|---|
+| `DEEPSEEK_API_KEY` | DeepSeek API key |
+| `DEEPSEEK_BASE_URL` | API base URL |
+| `DEEPSEEK_MODEL` | 默认模型 |
+| `DEEPSEEK_PROVIDER` | 提供方：`deepseek`、`nvidia-nim`、`fireworks` 或 `sglang` |
+| `DEEPSEEK_PROFILE` | 配置 profile 名称 |
+| `NVIDIA_API_KEY` | NVIDIA NIM API key |
+| `FIREWORKS_API_KEY` | Fireworks AI API key |
+| `SGLANG_BASE_URL` | 自托管 SGLang 端点 |
+| `SGLANG_API_KEY` | 可选 SGLang bearer token |
+
+快速诊断：
+
+```bash
+deepseek setup --status
+deepseek doctor --json
+```
+
+UI 语言与模型输出语言相互独立。
+
+### 切换为中文界面
+
+如果界面是英文的，可以在 TUI 内一键切换为简体中文：
+
+1. 在 Composer 里输入 `/config`，按 Tab 或 Enter 打开配置面板。
+
+   ![输入 /config 命令](assets/locale-config-step1.jpg)
+
+2. 选择 **Edit locale**，在 `New:` 字段输入 `zh-Hans`，按 Enter 应用。
+
+   ![编辑 locale 设为 zh-Hans](assets/locale-config-step2.jpg)
+
+可选语言：`auto` | `en` | `ja` | `zh-Hans` | `pt-BR`
+
+也可以直接在 `~/.deepseek/settings.toml` 里设置 `locale = "zh-Hans"`，或者通过 `LC_ALL` / `LANG` 环境变量自动选择。
+
+DeepSeek 上下文缓存是自动的；当 API 返回 cache hit/miss token 字段时，TUI 会把它们纳入用量和成本统计。
+
+---
+
+## 模型和价格
+
+DeepSeek TUI 默认面向带 100 万 token 上下文窗口的 **DeepSeek V4** 模型。
+
+| 模型 | 上下文 | 输入（缓存命中） | 输入（缓存未命中） | 输出 |
 |---|---|---|---|---|
 | `deepseek-v4-pro` | 1M | $0.003625 / 1M* | $0.435 / 1M* | $0.87 / 1M* |
 | `deepseek-v4-flash` | 1M | $0.0028 / 1M | $0.14 / 1M | $0.28 / 1M |
 
-Legacy aliases `deepseek-chat` and `deepseek-reasoner` silently map to `deepseek-v4-flash`.
+旧别名 `deepseek-chat` 和 `deepseek-reasoner` 会自动映射到 `deepseek-v4-flash`。
 
-**NVIDIA NIM** hosted variants (`deepseek-ai/deepseek-v4-pro`, `deepseek-ai/deepseek-v4-flash`) use your NVIDIA account terms — no DeepSeek platform billing.
+**NVIDIA NIM** 托管变体（`deepseek-ai/deepseek-v4-pro`、`deepseek-ai/deepseek-v4-flash`）使用你的 NVIDIA 账号条款，不走 DeepSeek 平台计费。
 
-*\*DeepSeek lists the Pro rates above as a limited-time 75% discount valid until 2026-05-05 15:59 UTC; the TUI cost estimator falls back to base Pro rates after that timestamp.*
+*DeepSeek 标注的 Pro 价格是限时 75% 折扣，有效期到 2026-05-05 15:59 UTC；该时间之后 TUI 成本估算会回退到 Pro 基础价格。*
 
 ---
 
-## Usage
+## 文档
 
-```bash
-deepseek                                      # interactive TUI
-deepseek "explain this function"              # one-shot prompt
-deepseek --model deepseek-v4-flash "summarize" # model override
-deepseek --yolo                               # YOLO mode (auto-approve tools)
-deepseek auth set --provider deepseek         # save API key to ~/.deepseek/config.toml
-deepseek doctor                               # check setup & connectivity
-deepseek doctor --json                        # machine-readable diagnostics
-deepseek setup --status                       # read-only setup status
-deepseek setup --tools --plugins              # scaffold local tool/plugin dirs
-deepseek models                               # list live API models
-deepseek sessions                             # list saved sessions
-deepseek resume --last                        # resume latest session
-deepseek serve --http                         # HTTP/SSE API server
-deepseek mcp list                             # list configured MCP servers
-deepseek mcp validate                         # validate MCP config/connectivity
-deepseek mcp-server                           # run dispatcher MCP stdio server
-```
-
-### Keyboard shortcuts
-
-| Key | Action |
+| 文档 | 主题 |
 |---|---|
-| `Tab` | Complete `/` or `@` entries; while a turn is running, queue the draft as a follow-up; otherwise cycle mode |
-| `Shift+Tab` | Cycle reasoning-effort: off → high → max |
-| `F1` | Help |
-| `Esc` | Back / dismiss |
-| `Ctrl+K` | Command palette |
-| `Ctrl+R` | Resume an earlier session |
-| `Alt+R` | Search prompt history and recover cleared drafts |
-| `@path` | Attach file/directory context in composer |
-| `↑` (at composer start) | Select attachment row for removal |
-| `Alt+↑` | Edit last queued message |
-| `/attach <path>` | Attach image/video media references; select the row with `↑` at composer start and remove with `Backspace`/`Delete` |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | 代码库内部结构 |
+| [CONFIGURATION.md](docs/CONFIGURATION.md) | 完整配置参考 |
+| [MODES.md](docs/MODES.md) | Plan / Agent / YOLO 模式 |
+| [MCP.md](docs/MCP.md) | Model Context Protocol 集成 |
+| [RUNTIME_API.md](docs/RUNTIME_API.md) | HTTP/SSE API 服务 |
+| [RELEASE_RUNBOOK.md](docs/RELEASE_RUNBOOK.md) | 发布流程 |
+| [OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | 运维和恢复 |
+
+完整更新历史见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
-## Modes
+## v0.8.8 新功能
 
-| Mode | Behavior |
-|---|---|
-| **Plan** 🔍 | Read-only investigation — model explores and proposes a decomposition plan (`update_plan` + `checklist_write`) before making changes |
-| **Agent** 🤖 | Default interactive mode — multi-step tool use with approval gates; model outlines work via `checklist_write` before requesting writes |
-| **YOLO** ⚡ | Auto-approve all tools in a trusted workspace; model still creates `checklist_write`/`update_plan` to keep work visible and trackable |
+以稳定性为主的发版：在 v0.8.6 / v0.8.7 基础上做了一层较厚的 UX 打磨，以及生产环境里暴露出来的运行时修复。模型和 API 没有改动，配置和会话保持向后兼容。
 
----
+- **TUI 打磨**：限速 / 5xx 时显示倒计时重试横幅、MCP 服务器健康指示灯、工具输出溢出预览（`~/.deepseek/tool_outputs/<id>.txt`，详情面板里完整查看）、多日时长显示（`2d 3h` 而不是 `188415s`）、`worked Nh Mm` 累计计时器、终端可点击 OSC 8 超链接、`edit_file` / `write_file` 输出渲染为带行号 `+`/`-` 槽位的内联 unified diff。
+- **斜杠菜单不再抖动聊天区**（Windows 10 PowerShell + WSL 用户反馈）：在斜杠 / 提及菜单打开时锁定 composer 高度，不再因为匹配项数量变化重绘上方区域。
+- **撰写区暂存** — Ctrl+S 把当前草稿停到 `~/.deepseek/composer_stash.jsonl`；`/stash list` / `pop` / `clear` 全程 LIFO，最多保留 200 条。
+- **可访问性**：`NO_ANIMATIONS=1`（或 `1` / `true` / `yes` / `on`）启动时强制 `low_motion = true` 与 `fancy_animations = false`，无视已保存设置；新增 `docs/ACCESSIBILITY.md`。键盘增强标志在崩溃 / Ctrl+Z 挂起 / 外部编辑器路径上都会回弹，崩溃后终端不会卡在 raw 模式。
+- **子智能体**：默认并发上限 `5 → 10`（可通过 `[subagents].max_concurrent` 配置，硬上限 20）；已完成的子智能体不再占用并发名额。多智能体 fan-out 时 UI 卡死的问题已修复（`SharedSubAgentManager` 改为 `Arc<RwLock<…>>`）。子智能体输出会先做摘要再注入父上下文。新增 `Implementer` / `Verifier` 角色。`agent_swarm` / `/swarm` 老接口在 v0.8.5 已删除。
+- **工作流 / 扩展**：`load_skill` 模型可调用工具；技能发现器跨工具走 `.agents/skills` / `skills` / `.opencode/skills` / `.claude/skills` / `~/.deepseek/skills`。`/hooks` 列出生命周期钩子配置；所有 `HookEvent` 现在都有运行时生产者。`instructions = [...]` 配置数组允许把多个项目级文件叠加进系统提示。`deepseek pr <N>` 子命令直接抓取 PR 元数据并在撰写区里预填评审 prompt。
+- **用户记忆 MVP（默认关闭）**：开启后 `~/.deepseek/memory.md` 注入到系统提示的 `<user_memory>` 块；撰写区输入 `# foo` 直接追加一条带时间戳的记忆，不触发回合；`/memory show|path|clear|edit` 用于查看与编辑。`[memory] enabled = true` 或 `DEEPSEEK_MEMORY=on` 启用。
+- **安全**：项目级配置不能再通过覆盖 `api_key` / `base_url` / `provider` / `mcp_config_path` 做权限提升，也不能把 `approval_policy` 设为 `auto` 或 `sandbox_mode` 设为 `danger-full-access`。`SSL_CERT_FILE` 环境变量在 HTTPS 客户端被识别（PEM bundle + DER 兜底），方便企业 CA / MITM 代理用户。execpolicy 在 shlex 之前剥离 heredoc 主体，所以 `auto_allow = ["cat > file.txt"]` 也能匹配 heredoc 形式 `cat <<EOF > file.txt\nbody\nEOF`。
+- **打包**：新增 **Linux ARM64** 预编译包（鲲鹏、HarmonyOS PC、Kylin、openEuler、树莓派、Graviton 等），`npm i -g deepseek-tui` 直接可用；新增 `docs/INSTALL.md` 覆盖所有安装方式。`deepseek update` 修复了 v0.8.7 在所有平台都失败的架构名映射 bug。CI 删了三个重复 / 失效的 workflow。
+- **Bug 修复**：composer 的 `Option+Backspace` 现在按词删除；离线撰写队列绑定到当前会话 ID，老的无作用域队列会被关闭式回退；`display_path` 测试不再竞争 `$HOME`，并在 Windows 用 `\` 拼接。
+- **认证与引导**：v0.8.8 默认不会触发系统凭据弹窗；启动、`doctor` 和普通请求路径使用 CLI 参数 → `~/.deepseek/config.toml` → 环境变量。`deepseek auth set --provider deepseek` 与 TUI 内引导现在都写入同一个用户配置文件。引导页文案改写为 "Step 1: 打开 https://platform.deepseek.com/api_keys / Step 2: 粘贴并回车"。"DeepSeek API key not found" 错误会优先给出 `deepseek auth set`，再说明环境变量方案（含 `~/.zshrc` vs `~/.zshenv` 提示）。规范入口 `deepseek` 现在接受 TUI 已声明支持的 `fireworks` / `sglang` provider；旧的 `deepseek login --api-key` / `deepseek logout` 也走同一套配置文件路径。
 
-## Configuration
-
-`~/.deepseek/config.toml` — see [config.example.toml](config.example.toml) for every option.
-
-Key environment overrides:
-
-| Variable | Purpose |
-|---|---|
-| `DEEPSEEK_API_KEY` | API key |
-| `DEEPSEEK_BASE_URL` | API base URL |
-| `DEEPSEEK_MODEL` | Default model |
-| `DEEPSEEK_PROVIDER` | Provider: `deepseek` (default), `nvidia-nim`, `fireworks`, or `sglang` |
-| `DEEPSEEK_PROFILE` | Config profile name |
-| `NVIDIA_API_KEY` | NVIDIA NIM API key |
-| `FIREWORKS_API_KEY` | Fireworks AI API key |
-| `SGLANG_BASE_URL` | Self-hosted SGLang endpoint |
-| `SGLANG_API_KEY` | Optional SGLang bearer token |
-
-Quick diagnostics: `deepseek setup --status` checks API key, MCP, sandbox, and
-`.env` state without network calls; `deepseek doctor --json` is suitable for CI;
-`deepseek setup --tools --plugins` scaffolds local tool and plugin directories.
-
-DeepSeek context caching is automatic — when the API returns cache hit/miss token fields, the TUI includes them in usage and cost tracking.
-
-Full reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md) and [docs/MCP.md](docs/MCP.md).
-
-UI locale is separate from model language — set `locale` in `settings.toml`
-or via the `LC_ALL`/`LANG` environment variables. See [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+完整列表见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
-## Publishing your own skill
+## 创建和安装技能
 
-DeepSeek-TUI discovers skills from the active skills directory. Workspace-local
-`.agents/skills` wins when present, then `./skills`, then the configured global
-directory (`~/.deepseek/skills` by default). Each skill is a directory with a
-`SKILL.md` file:
+DeepSeek-TUI 会从当前技能目录发现技能。优先级是：工作区
+`.agents/skills`、工作区 `./skills`、全局目录（默认
+`~/.deepseek/skills`）。每个技能都是一个包含 `SKILL.md` 的目录：
 
 ```text
 ~/.deepseek/skills/my-skill/
 └── SKILL.md
 ```
 
-`SKILL.md` must start with YAML frontmatter:
+`SKILL.md` 需要以 YAML frontmatter 开头：
 
 ```markdown
 ---
 name: my-skill
-description: Use this when DeepSeek should follow my custom workflow.
+description: 当 DeepSeek 需要遵循我的自定义工作流时使用这个技能。
 ---
 
 # My Skill
 
-Instructions for the agent go here.
+这里写给智能体的指令。
 ```
 
-Run `/skills` to list discovered skills, `/skill <name>` to activate one for
-the next message, or `/skill new` to use the bundled skill-creator helper.
-Installed skills are also listed in the model-visible session context so the
-agent can choose relevant skills when the user names them or when the task
-matches their descriptions.
+常用命令：
 
-DeepSeek-TUI can also install community skills directly from a GitHub repo,
-with no backend service in the loop:
+```bash
+/skills
+/skill my-skill
+/skill new
+/skill install github:<owner>/<repo>
+/skill update my-skill
+/skill uninstall my-skill
+/skill trust my-skill
+```
 
-1. Create a public GitHub repo with a `SKILL.md` at the root containing the
-   usual `---` frontmatter (`name`, `description`).
-2. Multi-skill bundles use `skills/<name>/SKILL.md` instead — the installer
-   picks the first match and names the install after the frontmatter `name`.
-3. Push to `main` (or `master`); the installer fetches
-   `archive/refs/heads/main.tar.gz` and falls back to `master.tar.gz`.
-4. Users install via `/skill install github:<owner>/<repo>` — installs are
-   gated by the `[network]` policy, validated for path traversal and size, and
-   placed under `~/.deepseek/skills/<name>/`.
-5. Submit a PR to the curated `index.json` (default registry) to make the skill
-   installable by name (`/skill install <name>`) instead of the GitHub spec.
-6. Use `/skill update <name>`, `/skill uninstall <name>`, or
-   `/skill trust <name>` for installed community skills. Trust is only needed
-   when you want scripts bundled with a skill to be eligible for execution.
+`/skills` 列出已发现技能，`/skill <name>` 会把技能应用到下一条消息，
+`/skill new` 会调用内置的 skill-creator 辅助创建新技能。已安装技能也会
+进入模型可见的会话上下文；当用户点名某个技能，或任务明显匹配技能描述时，
+智能体可以主动读取对应的 `SKILL.md` 并使用它。
 
-## Documentation
-
-| Doc | Topic |
-|---|---|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Codebase internals |
-| [CONFIGURATION.md](docs/CONFIGURATION.md) | Full config reference |
-| [MODES.md](docs/MODES.md) | Plan / Agent / YOLO modes |
-| [MCP.md](docs/MCP.md) | Model Context Protocol integration |
-| [RUNTIME_API.md](docs/RUNTIME_API.md) | HTTP/SSE API server |
-| [RELEASE_RUNBOOK.md](docs/RELEASE_RUNBOOK.md) | Release process |
-| [OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | Ops & recovery |
+社区技能可以直接从 GitHub 安装。安装过程受 `[network]` 策略约束，并会校验
+压缩包大小、路径穿越和符号链接。`/skill trust <name>` 只在你希望技能内置脚本
+可被执行时才需要。
 
 ---
 
-## Contributing
+## 贡献
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Pull requests welcome!
+欢迎提交 pull request。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-*Not affiliated with DeepSeek Inc.*
+*本项目与 DeepSeek Inc. 无隶属关系。*
 
-## License
+## 许可证
 
 [MIT](LICENSE)
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=Hmbown/DeepSeek-TUI&type=date&legend=top-left)](https://www.star-history.com/?repos=Hmbown%2FDeepSeek-TUI&type=date&logscale=&legend=top-left)
