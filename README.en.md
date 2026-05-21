@@ -2,7 +2,7 @@
 
 > **A terminal-native coding agent built around DeepSeek V4's 1M-token context and prefix cache. Single binary, no Node/Python runtime required — ships an MCP client, sandbox, and durable task queue out of the box.**
 
-[简体中文 README](README.zh-CN.md)
+[简体中文 README](README.md)
 
 ```bash
 npm i -g deepseek-tui
