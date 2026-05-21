@@ -2,7 +2,7 @@
 
 > **面向 [DeepSeek V4](https://platform.deepseek.com) 模型的终端原生编程智能体，支持 100 万 token 上下文、思考模式推理流和完整工具调用。**
 
-[English README](README.md)
+[English README](README.en.md)
 
 ```bash
 npm i -g deepseek-tui
